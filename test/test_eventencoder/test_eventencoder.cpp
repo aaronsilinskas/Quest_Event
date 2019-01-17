@@ -24,7 +24,7 @@ void test_new_instance_is_reset_to_no_encoded_data()
     }
 }
 
-void test_encode_event()
+void test_event_with_data()
 {
     Quest_EventEncoder ee = Quest_EventEncoder(buffer, BUFFER_SIZE);
     Event e;
@@ -38,13 +38,21 @@ void test_encode_event()
     bool result = ee.encodeToBuffer(&e);
     TEST_ASSERT_EQUAL(EventEncoded, ee.encodeState);
     TEST_ASSERT_EQUAL(true, result);
+    TEST_ASSERT_EQUAL(22, ee.encodedBitCount);
     TEST_ASSERT_EQUAL(0b00100000, buffer[0] & 0b11100000); // team ID
     TEST_ASSERT_EQUAL(0b00000100, buffer[0] & 0b00011110); // player ID
     TEST_ASSERT_EQUAL(0b00000000, buffer[0] & 0b00000001); // event ID (1 bit)
     TEST_ASSERT_EQUAL(0b00110000, buffer[1] & 0b11110000); // event ID (4 bits)
     TEST_ASSERT_EQUAL(0b00001010, buffer[1] & 0b00001111); // data (4 bits)
-    TEST_ASSERT_EQUAL(0b10100100, buffer[2] & 0b11111111); // data (6 bits)
+    TEST_ASSERT_EQUAL(0b10100100, buffer[2] & 0b11111100); // data (6 bits)
 }
+
+// test event without data
+// test encode clears previous buffer
+// test team too large
+// test player too large
+// test event ID too large
+// test write buffer overflow
 
 void setup()
 {
@@ -53,7 +61,7 @@ void setup()
     UNITY_BEGIN();
 
     RUN_TEST(test_new_instance_is_reset_to_no_encoded_data);
-    RUN_TEST(test_encode_event);
+    RUN_TEST(test_event_with_data);
 
     UNITY_END();
 }
