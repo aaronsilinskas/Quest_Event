@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define EVENT_DATA_LENGTH 32
+#define EVENT_DATA_LENGTH 24
 
 #define TEAM_ID_BITS 3
 #define PLAYER_ID_BITS 4
