@@ -8,9 +8,9 @@ bool Quest_EventEncoder::encodeToBuffer(Event *event)
 {
     eventWriter.reset();
     bool successful = true;
-    successful &= writeBits(event->teamID, TEAM_ID_BITS, TeamIDSizeExceeded);
-    successful &= writeBits(event->playerID, PLAYER_ID_BITS, PlayerIDSizeExceeded);
-    successful &= writeBits(event->eventID, EVENT_ID_BITS, EventIDSizeExceeded);
+    successful &= writeBits(event->teamID, QE_TEAM_ID_BITS, TeamIDSizeExceeded);
+    successful &= writeBits(event->playerID, QE_PLAYER_ID_BITS, PlayerIDSizeExceeded);
+    successful &= writeBits(event->eventID, QE_EVENT_ID_BITS, EventIDSizeExceeded);
     if (!successful)
     {
         return false;

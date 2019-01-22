@@ -3,14 +3,16 @@
 
 #include <Arduino.h>
 
-#define EVENT_DATA_LENGTH 24
+#define QE_DATA_LENGTH 24
 
-#define TEAM_ID_BITS 3
-#define PLAYER_ID_BITS 4
-#define EVENT_ID_BITS 5
+#define QE_TEAM_ID_BITS 4
+#define QE_PLAYER_ID_BITS 4
+#define QE_EVENT_ID_BITS 8
 
-#define EID_PING 1
-#define EID_PONG 2
+#define QE_HEADER_BITS QE_TEAM_ID_BITS + QE_PLAYER_ID_BITS + QE_EVENT_ID_BITS
+
+#define QE_ID_PING 1
+#define QE_ID_PONG 2
 
 #define bitRangeCheck(value, maxBits) ((value) < (1UL << maxBits) ? (true) : (false))
 
@@ -19,7 +21,7 @@ typedef struct event_t
   uint8_t teamID;
   uint8_t playerID;
   uint8_t eventID;
-  uint8_t data[EVENT_DATA_LENGTH];
+  uint8_t data[QE_DATA_LENGTH];
   uint8_t dataLengthInBits;
 } Event;
 
