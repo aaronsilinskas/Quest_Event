@@ -33,6 +33,24 @@ void randomizeEventWithData(Event *event)
     }
 }
 
+void verifyEncoderAndBuffer(Quest_EventEncoder *ee, Event *event)
+{
+    TEST_ASSERT_EQUAL(EventEncoded, ee->encodeState);
+    TEST_ASSERT_EQUAL(QE_HEADER_BITS + event->dataLengthInBits, ee->encodedBitCount);
+
+    Quest_BitReader qbr = Quest_BitReader(buffer, BUFFER_SIZE);
+    TEST_ASSERT_EQUAL(event->teamID, qbr.readBits(QE_TEAM_ID_BITS));
+    TEST_ASSERT_EQUAL(event->playerID, qbr.readBits(QE_PLAYER_ID_BITS));
+    TEST_ASSERT_EQUAL(event->eventID, qbr.readBits(QE_EVENT_ID_BITS));
+
+    uint8_t encodedData[QE_DATA_LENGTH];
+    qbr.readBuffer(encodedData, event->dataLengthInBits);
+    if (event->dataLengthInBits > 0)
+    {
+        TEST_ASSERT_EQUAL_INT8_ARRAY(event->data, encodedData, event->dataLengthInBits / 8);
+    }
+}
+
 void test_new_instance_is_reset_to_no_encoded_data()
 {
     Quest_EventEncoder ee = Quest_EventEncoder(buffer, BUFFER_SIZE);
@@ -46,16 +64,8 @@ void test_event_without_data()
     Event e;
     randomizeEvent(&e);
 
-    bool result = ee.encodeToBuffer(&e);
-
-    TEST_ASSERT_EQUAL(EventEncoded, ee.encodeState);
-    TEST_ASSERT_TRUE(result);
-    TEST_ASSERT_EQUAL(QE_HEADER_BITS, ee.encodedBitCount);
-
-    Quest_BitReader qbr = Quest_BitReader(buffer, BUFFER_SIZE);
-    TEST_ASSERT_EQUAL(e.teamID, qbr.readBits(QE_TEAM_ID_BITS));
-    TEST_ASSERT_EQUAL(e.playerID, qbr.readBits(QE_PLAYER_ID_BITS));
-    TEST_ASSERT_EQUAL(e.eventID, qbr.readBits(QE_EVENT_ID_BITS));
+    TEST_ASSERT_TRUE(ee.encodeToBuffer(&e));
+    verifyEncoderAndBuffer(&ee, &e);
 }
 
 void test_event_with_data()
@@ -64,23 +74,30 @@ void test_event_with_data()
     Event e;
     randomizeEventWithData(&e);
 
-    bool result = ee.encodeToBuffer(&e);
-    TEST_ASSERT_EQUAL(EventEncoded, ee.encodeState);
-    TEST_ASSERT_TRUE(result);
-    TEST_ASSERT_EQUAL(QE_HEADER_BITS + e.dataLengthInBits, ee.encodedBitCount);
-
-    Quest_BitReader qbr = Quest_BitReader(buffer, BUFFER_SIZE);
-    TEST_ASSERT_EQUAL(e.teamID, qbr.readBits(QE_TEAM_ID_BITS));
-    TEST_ASSERT_EQUAL(e.playerID, qbr.readBits(QE_PLAYER_ID_BITS));
-    TEST_ASSERT_EQUAL(e.eventID, qbr.readBits(QE_EVENT_ID_BITS));
-
-    uint8_t encodedData[QE_DATA_LENGTH];
-    qbr.readBuffer(encodedData, e.dataLengthInBits);
-
-    TEST_ASSERT_EQUAL_INT8_ARRAY(e.data, encodedData, e.dataLengthInBits / 8);
+    TEST_ASSERT_TRUE(ee.encodeToBuffer(&e));
+    verifyEncoderAndBuffer(&ee, &e);
 }
 
-// test encode used multiple times
+void test_encoding_multiple_times()
+{
+    Quest_EventEncoder ee = Quest_EventEncoder(buffer, BUFFER_SIZE);
+    Event e;
+    randomizeEventWithData(&e);
+
+    TEST_ASSERT_TRUE(ee.encodeToBuffer(&e));
+    verifyEncoderAndBuffer(&ee, &e);
+
+    randomizeEvent(&e);
+
+    TEST_ASSERT_TRUE(ee.encodeToBuffer(&e));
+    verifyEncoderAndBuffer(&ee, &e);
+
+    randomizeEventWithData(&e);
+
+    TEST_ASSERT_TRUE(ee.encodeToBuffer(&e));
+    verifyEncoderAndBuffer(&ee, &e);
+}
+
 // test team too large
 // test player too large
 // test event ID too large
@@ -95,6 +112,7 @@ void setup()
     RUN_TEST(test_new_instance_is_reset_to_no_encoded_data);
     RUN_TEST(test_event_without_data);
     RUN_TEST(test_event_with_data);
+    RUN_TEST(test_encoding_multiple_times);
 
     UNITY_END();
 }
