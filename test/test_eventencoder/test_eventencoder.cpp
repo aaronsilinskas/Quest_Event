@@ -26,7 +26,7 @@ void randomizeEvent(Event *event)
 void randomizeEventWithData(Event *event)
 {
     randomizeEvent(event);
-    event->dataLengthInBits = random(QE_DATA_LENGTH * 8);
+    event->dataLengthInBits = (1 + random(QE_DATA_LENGTH - 1)) * 8;
     for (uint16_t i = 0; i < event->dataLengthInBits / 8; i++)
     {
         event->data[i] = random(256);
@@ -98,10 +98,46 @@ void test_encoding_multiple_times()
     verifyEncoderAndBuffer(&ee, &e);
 }
 
-// test team too large
-// test player too large
-// test event ID too large
-// test write buffer overflow for each field and data
+void test_team_id_too_large()
+{
+    Quest_EventEncoder ee = Quest_EventEncoder(buffer, BUFFER_SIZE);
+    Event e;
+    randomizeEvent(&e);
+
+    // set team ID to larger than allowed value
+    e.teamID = 1 << QE_TEAM_ID_BITS;
+
+    TEST_ASSERT_FALSE(ee.encodeToBuffer(&e));
+    TEST_ASSERT_EQUAL(TeamIDSizeExceeded, ee.encodeState);
+}
+
+void test_player_id_too_large()
+{
+    Quest_EventEncoder ee = Quest_EventEncoder(buffer, BUFFER_SIZE);
+    Event e;
+    randomizeEvent(&e);
+
+    // set team ID to larger than allowed value
+    e.playerID = 1 << QE_PLAYER_ID_BITS;
+
+    TEST_ASSERT_FALSE(ee.encodeToBuffer(&e));
+    TEST_ASSERT_EQUAL(PlayerIDSizeExceeded, ee.encodeState);
+}
+
+void test_event_data_too_large()
+{
+    // make the buffer small enough to not hold any event data
+    uint8_t smallBufferSize = QE_HEADER_BITS >> 3;
+    uint8_t smallBuffer[smallBufferSize];
+    Quest_EventEncoder ee = Quest_EventEncoder(smallBuffer, smallBufferSize);
+    Event e;
+
+    // put data in the event, guaranteed to exceed the buffer
+    randomizeEventWithData(&e);
+
+    TEST_ASSERT_FALSE(ee.encodeToBuffer(&e));
+    TEST_ASSERT_EQUAL(BufferSizeExceeded, ee.encodeState);
+}
 
 void setup()
 {
@@ -113,6 +149,10 @@ void setup()
     RUN_TEST(test_event_without_data);
     RUN_TEST(test_event_with_data);
     RUN_TEST(test_encoding_multiple_times);
+    RUN_TEST(test_team_id_too_large);
+    RUN_TEST(test_player_id_too_large);
+    // No need to test event ID, 8 bits allowed and field is a uint8_t
+    RUN_TEST(test_event_data_too_large);
 
     UNITY_END();
 }
