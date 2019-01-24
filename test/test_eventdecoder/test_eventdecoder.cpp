@@ -2,6 +2,7 @@
 #include <unity.h>
 
 #include "Quest_EventDecoder.h"
+#include <Quest_BitWriter.h>
 
 #define BUFFER_SIZE 48
 #define BUFFER_SIZE_IN_BITS BUFFER_SIZE * 8
@@ -10,8 +11,7 @@ uint8_t buffer[BUFFER_SIZE];
 
 void test_new_instance()
 {
-    Event event;
-    decodeEvent(buffer, BUFFER_SIZE, &event);
+    Quest_EventDecoder ed = Quest_EventDecoder(buffer, BUFFER_SIZE);
 }
 
 void setup()

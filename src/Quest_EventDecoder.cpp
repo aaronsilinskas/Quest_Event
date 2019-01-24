@@ -1,6 +1,10 @@
 #include "Quest_EventDecoder.h"
 
-DecodeResult decodeEvent(uint8_t *buffer, uint8_t length, Event *event)
+Quest_EventDecoder::Quest_EventDecoder(uint8_t *buffer, uint8_t bufferLength) : eventReader(buffer, bufferLength)
+{
+}
+
+EventDecodeResult Quest_EventDecoder::decodeEvent(uint16_t bitsAvailable, Event *event)
 {
     return Decoded;
 }
