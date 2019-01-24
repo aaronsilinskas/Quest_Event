@@ -6,18 +6,18 @@
 
 enum EventDecodeResult
 {
-    Decoded
+  Decoded
 };
 
 class Quest_EventDecoder
 {
-  public:
-    Quest_EventDecoder(uint8_t *buffer, uint8_t bufferLength);
+public:
+  Quest_EventDecoder(uint8_t *buffer, uint8_t bufferLength);
 
-    EventDecodeResult decodeEvent(uint16_t bitsAvailable, Event *event);
+  EventDecodeResult decodeEvent(uint16_t bitsAvailable, Event *event);
 
-  private:
-    Quest_BitReader eventReader;
+private:
+  Quest_BitReader eventReader;
 };
 
 #endif
