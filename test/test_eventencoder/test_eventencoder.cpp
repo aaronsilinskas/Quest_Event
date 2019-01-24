@@ -35,7 +35,6 @@ void randomizeEventWithData(Event *event)
 
 void verifyEncoderAndBuffer(Quest_EventEncoder *ee, Event *event)
 {
-    TEST_ASSERT_EQUAL(EventEncoded, ee->encodeState);
     TEST_ASSERT_EQUAL(QE_HEADER_BITS + event->dataLengthInBits, ee->encodedBitCount);
 
     Quest_BitReader qbr = Quest_BitReader(buffer, BUFFER_SIZE);
@@ -54,7 +53,6 @@ void verifyEncoderAndBuffer(Quest_EventEncoder *ee, Event *event)
 void test_new_instance_is_reset_to_no_encoded_data()
 {
     Quest_EventEncoder ee = Quest_EventEncoder(buffer, BUFFER_SIZE);
-    TEST_ASSERT_EQUAL(None, ee.encodeState);
     TEST_ASSERT_EQUAL(0, ee.encodedBitCount);
 }
 
@@ -63,8 +61,7 @@ void test_event_without_data()
     Quest_EventEncoder ee = Quest_EventEncoder(buffer, BUFFER_SIZE);
     Event e;
     randomizeEvent(&e);
-
-    TEST_ASSERT_TRUE(ee.encodeToBuffer(&e));
+    TEST_ASSERT_EQUAL(EventEncoded, ee.encodeToBuffer(&e));
     verifyEncoderAndBuffer(&ee, &e);
 }
 
@@ -74,7 +71,7 @@ void test_event_with_data()
     Event e;
     randomizeEventWithData(&e);
 
-    TEST_ASSERT_TRUE(ee.encodeToBuffer(&e));
+    TEST_ASSERT_EQUAL(EventEncoded, ee.encodeToBuffer(&e));
     verifyEncoderAndBuffer(&ee, &e);
 }
 
@@ -84,17 +81,17 @@ void test_encoding_multiple_times()
     Event e;
     randomizeEventWithData(&e);
 
-    TEST_ASSERT_TRUE(ee.encodeToBuffer(&e));
+    TEST_ASSERT_EQUAL(EventEncoded, ee.encodeToBuffer(&e));
     verifyEncoderAndBuffer(&ee, &e);
 
     randomizeEvent(&e);
 
-    TEST_ASSERT_TRUE(ee.encodeToBuffer(&e));
+    TEST_ASSERT_EQUAL(EventEncoded, ee.encodeToBuffer(&e));
     verifyEncoderAndBuffer(&ee, &e);
 
     randomizeEventWithData(&e);
 
-    TEST_ASSERT_TRUE(ee.encodeToBuffer(&e));
+    TEST_ASSERT_EQUAL(EventEncoded, ee.encodeToBuffer(&e));
     verifyEncoderAndBuffer(&ee, &e);
 }
 
@@ -107,8 +104,8 @@ void test_team_id_too_large()
     // set team ID to larger than allowed value
     e.teamID = 1 << QE_TEAM_ID_BITS;
 
-    TEST_ASSERT_FALSE(ee.encodeToBuffer(&e));
-    TEST_ASSERT_EQUAL(TeamIDSizeExceeded, ee.encodeState);
+    TEST_ASSERT_EQUAL(TeamIDSizeExceeded, ee.encodeToBuffer(&e));
+    TEST_ASSERT_EQUAL(0, ee.encodedBitCount);
 }
 
 void test_player_id_too_large()
@@ -120,14 +117,14 @@ void test_player_id_too_large()
     // set team ID to larger than allowed value
     e.playerID = 1 << QE_PLAYER_ID_BITS;
 
-    TEST_ASSERT_FALSE(ee.encodeToBuffer(&e));
-    TEST_ASSERT_EQUAL(PlayerIDSizeExceeded, ee.encodeState);
+    TEST_ASSERT_EQUAL(PlayerIDSizeExceeded, ee.encodeToBuffer(&e));
+    TEST_ASSERT_EQUAL(0, ee.encodedBitCount);
 }
 
 void test_event_data_too_large()
 {
     // make the buffer small enough to not hold any event data
-    uint8_t smallBufferSize = QE_HEADER_BITS >> 3;
+    uint8_t smallBufferSize = (QE_HEADER_BITS) / 8;
     uint8_t smallBuffer[smallBufferSize];
     Quest_EventEncoder ee = Quest_EventEncoder(smallBuffer, smallBufferSize);
     Event e;
@@ -135,8 +132,8 @@ void test_event_data_too_large()
     // put data in the event, guaranteed to exceed the buffer
     randomizeEventWithData(&e);
 
-    TEST_ASSERT_FALSE(ee.encodeToBuffer(&e));
-    TEST_ASSERT_EQUAL(BufferSizeExceeded, ee.encodeState);
+    TEST_ASSERT_EQUAL(BufferSizeExceeded, ee.encodeToBuffer(&e));
+    TEST_ASSERT_EQUAL(0, ee.encodedBitCount);
 }
 
 void setup()

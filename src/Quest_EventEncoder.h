@@ -4,31 +4,29 @@
 #include <Quest_BitWriter.h>
 #include "Quest_Event.h"
 
-enum EventEncodeState
+enum EventEncodeResult
 {
-  None,
+  EventEncoded,
   BufferSizeExceeded,
   TeamIDSizeExceeded,
   PlayerIDSizeExceeded,
   EventIDSizeExceeded,
-  EventEncoded
 };
 
 class Quest_EventEncoder
 {
 public:
-  EventEncodeState encodeState = None;
   uint16_t encodedBitCount;
 
   Quest_EventEncoder(uint8_t *buffer, uint8_t bufferLength);
 
-  bool encodeToBuffer(Event *event);
+  EventEncodeResult encodeToBuffer(Event *event);
 
 private:
   Quest_BitWriter eventWriter;
 
-  bool writeBits(uint32_t bits, uint8_t bitsToWrite, EventEncodeState failureState);
-  void setInvalidEncodeState(EventEncodeState state);
+  bool writeBits(uint32_t bits, uint8_t bitsToWrite);
+  EventEncodeResult resetEncoder(EventEncodeResult reason);
 };
 
 #endif
