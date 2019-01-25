@@ -7,7 +7,8 @@
 enum EventDecodeResult
 {
   EventDecoded,
-  InvalidHeader
+  InvalidHeader,
+  DataSizeExceeded
 };
 
 class Quest_EventDecoder

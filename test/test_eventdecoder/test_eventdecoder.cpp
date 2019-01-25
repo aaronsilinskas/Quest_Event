@@ -124,7 +124,22 @@ void test_not_enough_bits_for_header()
     TEST_ASSERT_EQUAL(InvalidHeader, result);
 }
 
-// test too much event data
+void test_too_much_event_data()
+{
+    Event encodedEvent;
+    setupEncodedEvent(&encodedEvent);
+    // write more data than will fit in the event data
+    for (uint16_t i = 0; i < QE_DATA_LENGTH + 1; i++)
+    {
+        rawData.writeBits(random(256), 8);
+    }
+
+    Quest_EventDecoder ed = Quest_EventDecoder(buffer, BUFFER_SIZE);
+    Event decodedEvent;
+
+    EventDecodeResult result = ed.decodeEvent(rawData.bitsWritten(), &decodedEvent);
+    TEST_ASSERT_EQUAL(DataSizeExceeded, result);
+}
 
 void setup()
 {
@@ -136,6 +151,7 @@ void setup()
     RUN_TEST(test_decode_event_with_data);
     RUN_TEST(test_decode_multiple_times);
     RUN_TEST(test_not_enough_bits_for_header);
+    RUN_TEST(test_too_much_event_data);
 
     UNITY_END();
 }

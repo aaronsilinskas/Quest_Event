@@ -15,6 +15,11 @@ EventDecodeResult Quest_EventDecoder::decodeEvent(uint16_t bitsAvailable, Event 
     event->teamID = eventReader.readBits(QE_TEAM_ID_BITS);
     event->playerID = eventReader.readBits(QE_PLAYER_ID_BITS);
     event->eventID = eventReader.readBits(QE_EVENT_ID_BITS);
+    if (eventReader.bitsRemaining() > QE_DATA_LENGTH * 8)
+    {
+        return DataSizeExceeded;
+    }
+
     event->dataLengthInBits = eventReader.bitsRemaining();
     eventReader.readBuffer(event->data, event->dataLengthInBits);
 
