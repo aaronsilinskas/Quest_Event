@@ -46,6 +46,24 @@ uint16_t setupRandomEventWithData(Event *event)
     return rawData.bitsWritten();
 }
 
+void verifyDecoding(EventDecodeResult result, Event *expected, Event *actual)
+{
+    TEST_ASSERT_EQUAL(Decoded, result);
+    TEST_ASSERT_EQUAL(expected->teamID, actual->teamID);
+    TEST_ASSERT_EQUAL(expected->playerID, actual->playerID);
+    TEST_ASSERT_EQUAL(expected->eventID, actual->eventID);
+    TEST_ASSERT_EQUAL(expected->dataLengthInBits, actual->dataLengthInBits);
+    if (expected->dataLengthInBits > 0)
+    {
+        uint8_t bytesWithData = (expected->dataLengthInBits / 8);
+        if (expected->dataLengthInBits % 8 > 0)
+        {
+            bytesWithData++;
+        }
+        TEST_ASSERT_EQUAL_INT8_ARRAY(expected->data, actual->data, bytesWithData);
+    }
+}
+
 void test_decode_event_with_no_data()
 {
     Event randomEvent;
@@ -55,11 +73,7 @@ void test_decode_event_with_no_data()
     Event decodedEvent;
     EventDecodeResult result = ed.decodeEvent(bitsAvailable, &decodedEvent);
 
-    TEST_ASSERT_EQUAL(Decoded, result);
-    TEST_ASSERT_EQUAL(randomEvent.teamID, decodedEvent.teamID);
-    TEST_ASSERT_EQUAL(randomEvent.playerID, decodedEvent.playerID);
-    TEST_ASSERT_EQUAL(randomEvent.eventID, decodedEvent.eventID);
-    TEST_ASSERT_EQUAL(0, decodedEvent.dataLengthInBits);
+    verifyDecoding(result, &randomEvent, &decodedEvent);
 }
 
 void test_decode_event_with_data()
@@ -71,17 +85,26 @@ void test_decode_event_with_data()
     Event decodedEvent;
     EventDecodeResult result = ed.decodeEvent(bitsAvailable, &decodedEvent);
 
-    TEST_ASSERT_EQUAL(Decoded, result);
-    TEST_ASSERT_EQUAL(randomEvent.teamID, decodedEvent.teamID);
-    TEST_ASSERT_EQUAL(randomEvent.playerID, decodedEvent.playerID);
-    TEST_ASSERT_EQUAL(randomEvent.eventID, decodedEvent.eventID);
-    TEST_ASSERT_EQUAL(randomEvent.dataLengthInBits, decodedEvent.dataLengthInBits);
-    uint8_t bytesWithData = (randomEvent.dataLengthInBits / 8);
-    if (randomEvent.dataLengthInBits % 8 > 0)
-    {
-        bytesWithData++;
-    }
-    TEST_ASSERT_EQUAL_INT8_ARRAY(randomEvent.data, decodedEvent.data, bytesWithData);
+    verifyDecoding(result, &randomEvent, &decodedEvent);
+}
+
+void test_decode_multiple_times()
+{
+    Quest_EventDecoder ed = Quest_EventDecoder(buffer, BUFFER_SIZE);
+    Event decodedEvent;
+    Event randomEvent;
+
+    uint16_t bitsAvailable = setupRandomEventWithData(&randomEvent);
+    EventDecodeResult result = ed.decodeEvent(bitsAvailable, &decodedEvent);
+    verifyDecoding(result, &randomEvent, &decodedEvent);
+
+    bitsAvailable = setupRandomEvent(&randomEvent);
+    result = ed.decodeEvent(bitsAvailable, &decodedEvent);
+    verifyDecoding(result, &randomEvent, &decodedEvent);
+
+    bitsAvailable = setupRandomEventWithData(&randomEvent);
+    result = ed.decodeEvent(bitsAvailable, &decodedEvent);
+    verifyDecoding(result, &randomEvent, &decodedEvent);
 }
 
 // test not enough bits for header (team + player + event IDs)
@@ -95,6 +118,7 @@ void setup()
 
     RUN_TEST(test_decode_event_with_no_data);
     RUN_TEST(test_decode_event_with_data);
+    RUN_TEST(test_decode_multiple_times);
 
     UNITY_END();
 }
