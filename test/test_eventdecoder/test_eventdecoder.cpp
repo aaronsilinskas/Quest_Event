@@ -31,6 +31,21 @@ uint16_t setupRandomEvent(Event *event)
     return rawData.bitsWritten();
 }
 
+uint16_t setupRandomEventWithData(Event *event)
+{
+    setupRandomEvent(event);
+    event->dataLengthInBits = (1 + random(QE_DATA_LENGTH - 1)) * 8;
+
+    for (uint16_t i = 0; i < event->dataLengthInBits / 8; i++)
+    {
+        event->data[i] = random(256);
+    }
+
+    rawData.writeBuffer(event->data, event->dataLengthInBits);
+
+    return rawData.bitsWritten();
+}
+
 void test_decode_event_with_no_data()
 {
     Event randomEvent;
@@ -44,10 +59,31 @@ void test_decode_event_with_no_data()
     TEST_ASSERT_EQUAL(randomEvent.teamID, decodedEvent.teamID);
     TEST_ASSERT_EQUAL(randomEvent.playerID, decodedEvent.playerID);
     TEST_ASSERT_EQUAL(randomEvent.eventID, decodedEvent.eventID);
-    TEST_ASSERT_EQUAL(randomEvent.dataLengthInBits, decodedEvent.dataLengthInBits);
+    TEST_ASSERT_EQUAL(0, decodedEvent.dataLengthInBits);
 }
 
-// test event with data
+void test_decode_event_with_data()
+{
+    Event randomEvent;
+    uint16_t bitsAvailable = setupRandomEventWithData(&randomEvent);
+
+    Quest_EventDecoder ed = Quest_EventDecoder(buffer, BUFFER_SIZE);
+    Event decodedEvent;
+    EventDecodeResult result = ed.decodeEvent(bitsAvailable, &decodedEvent);
+
+    TEST_ASSERT_EQUAL(Decoded, result);
+    TEST_ASSERT_EQUAL(randomEvent.teamID, decodedEvent.teamID);
+    TEST_ASSERT_EQUAL(randomEvent.playerID, decodedEvent.playerID);
+    TEST_ASSERT_EQUAL(randomEvent.eventID, decodedEvent.eventID);
+    TEST_ASSERT_EQUAL(randomEvent.dataLengthInBits, decodedEvent.dataLengthInBits);
+    uint8_t bytesWithData = (randomEvent.dataLengthInBits / 8);
+    if (randomEvent.dataLengthInBits % 8 > 0)
+    {
+        bytesWithData++;
+    }
+    TEST_ASSERT_EQUAL_INT8_ARRAY(randomEvent.data, decodedEvent.data, bytesWithData);
+}
+
 // test not enough bits for header (team + player + event IDs)
 // test too much event data
 
@@ -58,6 +94,7 @@ void setup()
     UNITY_BEGIN();
 
     RUN_TEST(test_decode_event_with_no_data);
+    RUN_TEST(test_decode_event_with_data);
 
     UNITY_END();
 }
