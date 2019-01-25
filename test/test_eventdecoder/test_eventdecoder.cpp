@@ -48,7 +48,7 @@ uint16_t setupRandomEventWithData(Event *event)
 
 void verifyDecoding(EventDecodeResult result, Event *expected, Event *actual)
 {
-    TEST_ASSERT_EQUAL(Decoded, result);
+    TEST_ASSERT_EQUAL(EventDecoded, result);
     TEST_ASSERT_EQUAL(expected->teamID, actual->teamID);
     TEST_ASSERT_EQUAL(expected->playerID, actual->playerID);
     TEST_ASSERT_EQUAL(expected->eventID, actual->eventID);
@@ -107,7 +107,23 @@ void test_decode_multiple_times()
     verifyDecoding(result, &randomEvent, &decodedEvent);
 }
 
-// test not enough bits for header (team + player + event IDs)
+void test_not_enough_bits_for_header()
+{
+    // fill the buffer with less than the required header size
+    rawData.reset();
+    uint16_t bitsToWrite = random(QE_HEADER_BITS); // will always be less than QE_HEADER_BITS
+    for (uint16_t i = 0; i < bitsToWrite; i++)
+    {
+        rawData.writeBit(random(2));
+    }
+
+    Quest_EventDecoder ed = Quest_EventDecoder(buffer, BUFFER_SIZE);
+    Event decodedEvent;
+
+    EventDecodeResult result = ed.decodeEvent(rawData.bitsWritten(), &decodedEvent);
+    TEST_ASSERT_EQUAL(InvalidHeader, result);
+}
+
 // test too much event data
 
 void setup()
@@ -119,6 +135,7 @@ void setup()
     RUN_TEST(test_decode_event_with_no_data);
     RUN_TEST(test_decode_event_with_data);
     RUN_TEST(test_decode_multiple_times);
+    RUN_TEST(test_not_enough_bits_for_header);
 
     UNITY_END();
 }

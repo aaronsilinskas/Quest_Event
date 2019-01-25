@@ -6,7 +6,8 @@
 
 enum EventDecodeResult
 {
-  Decoded
+  EventDecoded,
+  InvalidHeader
 };
 
 class Quest_EventDecoder
