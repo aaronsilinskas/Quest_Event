@@ -16,7 +16,7 @@ uint32_t randomBits(uint8_t bits)
     return random(maxValue);
 }
 
-uint16_t setupRandomEvent(Event *event)
+uint16_t setupEncodedEvent(Event *event)
 {
     event->teamID = randomBits(QE_TEAM_ID_BITS);
     event->playerID = randomBits(QE_PLAYER_ID_BITS);
@@ -31,9 +31,9 @@ uint16_t setupRandomEvent(Event *event)
     return rawData.bitsWritten();
 }
 
-uint16_t setupRandomEventWithData(Event *event)
+uint16_t setupEncodedEventWithData(Event *event)
 {
-    setupRandomEvent(event);
+    setupEncodedEvent(event);
     event->dataLengthInBits = (1 + random(QE_DATA_LENGTH - 1)) * 8;
 
     for (uint16_t i = 0; i < event->dataLengthInBits / 8; i++)
@@ -66,45 +66,45 @@ void verifyDecoding(EventDecodeResult result, Event *expected, Event *actual)
 
 void test_decode_event_with_no_data()
 {
-    Event randomEvent;
-    uint16_t bitsAvailable = setupRandomEvent(&randomEvent);
+    Event encodedEvent;
+    uint16_t bitsAvailable = setupEncodedEvent(&encodedEvent);
 
     Quest_EventDecoder ed = Quest_EventDecoder(buffer, BUFFER_SIZE);
     Event decodedEvent;
     EventDecodeResult result = ed.decodeEvent(bitsAvailable, &decodedEvent);
 
-    verifyDecoding(result, &randomEvent, &decodedEvent);
+    verifyDecoding(result, &encodedEvent, &decodedEvent);
 }
 
 void test_decode_event_with_data()
 {
-    Event randomEvent;
-    uint16_t bitsAvailable = setupRandomEventWithData(&randomEvent);
+    Event encodedEvent;
+    uint16_t bitsAvailable = setupEncodedEventWithData(&encodedEvent);
 
     Quest_EventDecoder ed = Quest_EventDecoder(buffer, BUFFER_SIZE);
     Event decodedEvent;
     EventDecodeResult result = ed.decodeEvent(bitsAvailable, &decodedEvent);
 
-    verifyDecoding(result, &randomEvent, &decodedEvent);
+    verifyDecoding(result, &encodedEvent, &decodedEvent);
 }
 
 void test_decode_multiple_times()
 {
     Quest_EventDecoder ed = Quest_EventDecoder(buffer, BUFFER_SIZE);
     Event decodedEvent;
-    Event randomEvent;
+    Event encodedEvent;
 
-    uint16_t bitsAvailable = setupRandomEventWithData(&randomEvent);
+    uint16_t bitsAvailable = setupEncodedEventWithData(&encodedEvent);
     EventDecodeResult result = ed.decodeEvent(bitsAvailable, &decodedEvent);
-    verifyDecoding(result, &randomEvent, &decodedEvent);
+    verifyDecoding(result, &encodedEvent, &decodedEvent);
 
-    bitsAvailable = setupRandomEvent(&randomEvent);
+    bitsAvailable = setupEncodedEvent(&encodedEvent);
     result = ed.decodeEvent(bitsAvailable, &decodedEvent);
-    verifyDecoding(result, &randomEvent, &decodedEvent);
+    verifyDecoding(result, &encodedEvent, &decodedEvent);
 
-    bitsAvailable = setupRandomEventWithData(&randomEvent);
+    bitsAvailable = setupEncodedEventWithData(&encodedEvent);
     result = ed.decodeEvent(bitsAvailable, &decodedEvent);
-    verifyDecoding(result, &randomEvent, &decodedEvent);
+    verifyDecoding(result, &encodedEvent, &decodedEvent);
 }
 
 void test_not_enough_bits_for_header()
