@@ -10,12 +10,6 @@
 uint8_t buffer[BUFFER_SIZE];
 Quest_BitWriter rawData = Quest_BitWriter(buffer, BUFFER_SIZE);
 
-uint32_t randomBits(uint8_t bits)
-{
-    uint64_t maxValue = 1 << bits;
-    return random(maxValue);
-}
-
 uint16_t setupEncodedEvent(Event *event)
 {
     event->teamID = randomBits(QE_TEAM_ID_BITS);

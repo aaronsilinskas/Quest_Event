@@ -25,4 +25,8 @@ typedef struct event_t
   uint8_t dataLengthInBits;
 } Event;
 
+uint32_t randomBits(uint8_t bits);
+void randomizeEvent(Event *event);
+void randomizeEventWithData(Event *event);
+
 #endif
