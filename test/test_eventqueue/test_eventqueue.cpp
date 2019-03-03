@@ -29,6 +29,18 @@ void compareEvents(Event *event1, Event *event2)
     }
 }
 
+void compareEventWithValues(Event *event, uint8_t teamID, uint8_t playerID, uint8_t eventID, uint8_t *data, uint8_t dataLengthInBits)
+{
+    TEST_ASSERT_EQUAL(teamID, event->teamID);
+    TEST_ASSERT_EQUAL(playerID, event->playerID);
+    TEST_ASSERT_EQUAL(eventID, event->eventID);
+    TEST_ASSERT_EQUAL(dataLengthInBits, event->dataLengthInBits);
+    if (dataLengthInBits > 0)
+    {
+        TEST_ASSERT_EQUAL_INT8_ARRAY(data, event->data, event->dataLengthInBits / 8);
+    }
+}
+
 void test_offering_and_polling_events()
 {
     Quest_EventQueue eq = Quest_EventQueue(eventQueue, EVENT_QUEUE_SIZE, 0, 0);
@@ -62,8 +74,11 @@ void test_offering_to_full_queue()
     }
     TEST_ASSERT_EQUAL(EVENT_QUEUE_SIZE, eq.eventsWaiting());
 
-    // now try to offer another event
-    TEST_ASSERT_FALSE(eq.offer(&randomEvents[0]));
+    // now try to offer more events when queue is full
+    Event *randomEvent = &randomEvent[0];
+    TEST_ASSERT_FALSE(eq.offer(randomEvent));
+    TEST_ASSERT_FALSE(eq.offer(randomEvent->eventID, randomEvent->data, randomEvent->dataLengthInBits));
+    TEST_ASSERT_FALSE(eq.offer(randomEvent->eventID));
     TEST_ASSERT_EQUAL(EVENT_QUEUE_SIZE, eq.eventsWaiting());
 }
 
@@ -121,10 +136,7 @@ void test_default_team_and_player_without_event_data()
 
     Event next;
     TEST_ASSERT_TRUE(eq.poll(&next));
-    TEST_ASSERT_EQUAL(defaultTeamID, next.teamID);
-    TEST_ASSERT_EQUAL(defaultPlayerID, next.playerID);
-    TEST_ASSERT_EQUAL(eventID, next.eventID);
-    TEST_ASSERT_EQUAL(0, next.dataLengthInBits);
+    compareEventWithValues(&next, defaultTeamID, defaultPlayerID, eventID, NULL, 0);
 }
 
 void test_default_team_and_player_with_event_data()
@@ -143,11 +155,35 @@ void test_default_team_and_player_with_event_data()
 
     Event next;
     TEST_ASSERT_TRUE(eq.poll(&next));
-    TEST_ASSERT_EQUAL(defaultTeamID, next.teamID);
-    TEST_ASSERT_EQUAL(defaultPlayerID, next.playerID);
-    TEST_ASSERT_EQUAL(eventID, next.eventID);
-    TEST_ASSERT_EQUAL(dataLengthInBits, next.dataLengthInBits);
-    TEST_ASSERT_EQUAL_INT8_ARRAY(data, next.data, dataLengthInBits / 8);
+    compareEventWithValues(&next, defaultTeamID, defaultPlayerID, eventID, data, dataLengthInBits);
+}
+
+void test_circular_queue_with_default_team_and_player()
+{
+    Event randomEvent;
+    randomizeEvent(&randomEvent);
+    uint8_t defaultTeamID = randomEvent.teamID;
+    uint8_t defaultPlayerID = randomEvent.playerID;
+
+    Quest_EventQueue eq = Quest_EventQueue(eventQueue, EVENT_QUEUE_SIZE, defaultTeamID, defaultPlayerID);
+    // offer and poll more events than the queue size to force a circle back to the start of the queue
+    uint8_t eventsToOffer = EVENT_QUEUE_SIZE * 3;
+    Event next;
+    for (uint8_t i = 0; i < eventsToOffer; i++)
+    {
+        Event *randomEvent = &randomEvents[i % EVENT_QUEUE_SIZE];
+        TEST_ASSERT_TRUE(eq.offer(randomEvent->eventID, randomEvent->data, randomEvent->dataLengthInBits));
+        TEST_ASSERT_EQUAL(1, eq.eventsWaiting());
+
+        // peek into the queue to make sure circling is happening
+        Event *peek = &eventQueue[i % EVENT_QUEUE_SIZE];
+        compareEventWithValues(peek, defaultTeamID, defaultPlayerID, randomEvent->eventID, randomEvent->data, randomEvent->dataLengthInBits);
+
+        // polling must also circle
+        TEST_ASSERT_TRUE(eq.poll(&next));
+        TEST_ASSERT_EQUAL(0, eq.eventsWaiting());
+        compareEventWithValues(&next, defaultTeamID, defaultPlayerID, randomEvent->eventID, randomEvent->data, randomEvent->dataLengthInBits);
+    }
 }
 
 void setup()
@@ -163,6 +199,7 @@ void setup()
     RUN_TEST(test_circular_queue);
     RUN_TEST(test_default_team_and_player_without_event_data);
     RUN_TEST(test_default_team_and_player_with_event_data);
+    RUN_TEST(test_circular_queue_with_default_team_and_player);
 
     UNITY_END();
 }
