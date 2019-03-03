@@ -52,10 +52,25 @@ void test_offering_and_polling_events()
     TEST_ASSERT_EQUAL(0, ed.eventsWaiting());
 }
 
-// test offering event
-// test offering event on full queue
-// test pulling event off queue (FIFO)
+void test_offering_to_full_queue()
+{
+    Quest_EventDispatcher ed = Quest_EventDispatcher(eventQueue, EVENT_QUEUE_SIZE);
+    // fill the queue
+    for (uint8_t i = 0; i < EVENT_QUEUE_SIZE; i++)
+    {
+        TEST_ASSERT_TRUE(ed.offer(&randomEvents[i]));
+    }
+    TEST_ASSERT_EQUAL(EVENT_QUEUE_SIZE, ed.eventsWaiting());
+
+    // now try to offer another event
+    TEST_ASSERT_FALSE(ed.offer(&randomEvents[0]));
+    TEST_ASSERT_EQUAL(EVENT_QUEUE_SIZE, ed.eventsWaiting());
+}
+
 // test pulling with no events
+// test circular queue buffer (offer and immediate poll events more than queue size times)
+// - make sure eventsWaiting is correct
+// test pulling with no events after circling queue
 // test default team & player ID when not set
 
 void setup()
@@ -66,6 +81,7 @@ void setup()
     UNITY_BEGIN();
 
     RUN_TEST(test_offering_and_polling_events);
+    RUN_TEST(test_offering_to_full_queue);
 
     UNITY_END();
 }

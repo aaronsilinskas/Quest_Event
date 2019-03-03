@@ -10,6 +10,11 @@ Quest_EventDispatcher::Quest_EventDispatcher(Event *queue, uint8_t queueSize)
 
 bool Quest_EventDispatcher::offer(Event *e)
 {
+    if (queuePosition >= queueSize)
+    {
+        return false;
+    }
+
     copyEvent(&queue[queuePosition], e);
     queuePosition++;
     return true;
