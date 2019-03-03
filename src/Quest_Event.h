@@ -13,6 +13,9 @@
 
 #define QE_ID_PING 1
 #define QE_ID_PONG 2
+#define QE_ID_PROGRESS 3
+#define QE_ID_LOCKED 4
+#define QE_ID_UNLOCKED 5
 
 #define bitRangeCheck(value, maxBits) ((value) < (1UL << maxBits) ? (true) : (false))
 
