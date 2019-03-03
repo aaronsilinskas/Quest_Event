@@ -27,6 +27,11 @@ uint8_t Quest_EventDispatcher::eventsWaiting()
 
 bool Quest_EventDispatcher::poll(Event *out)
 {
+    if (pollPosition >= queuePosition)
+    {
+        return false;
+    }
+
     copyEvent(out, &queue[pollPosition]);
     pollPosition++;
     return true;

@@ -67,7 +67,23 @@ void test_offering_to_full_queue()
     TEST_ASSERT_EQUAL(EVENT_QUEUE_SIZE, ed.eventsWaiting());
 }
 
-// test pulling with no events
+void test_polling_when_no_events_are_queued()
+{
+    Quest_EventDispatcher ed = Quest_EventDispatcher(eventQueue, EVENT_QUEUE_SIZE);
+    // offer and poll events so no events are queued
+    uint8_t eventsToOffer = random(EVENT_QUEUE_SIZE);
+    Event ignoredEvent;
+    for (uint8_t i = 0; i < eventsToOffer; i++)
+    {
+        ed.offer(&randomEvents[i]);
+        ed.poll(&ignoredEvent);
+    }
+    TEST_ASSERT_EQUAL(0, ed.eventsWaiting());
+    Event next;
+    TEST_ASSERT_FALSE(ed.poll(&next));
+    TEST_ASSERT_EQUAL(0, ed.eventsWaiting());
+}
+
 // test circular queue buffer (offer and immediate poll events more than queue size times)
 // - make sure eventsWaiting is correct
 // test pulling with no events after circling queue
@@ -82,6 +98,7 @@ void setup()
 
     RUN_TEST(test_offering_and_polling_events);
     RUN_TEST(test_offering_to_full_queue);
+    RUN_TEST(test_polling_when_no_events_are_queued);
 
     UNITY_END();
 }
