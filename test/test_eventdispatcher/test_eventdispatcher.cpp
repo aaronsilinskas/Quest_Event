@@ -84,9 +84,29 @@ void test_polling_when_no_events_are_queued()
     TEST_ASSERT_EQUAL(0, ed.eventsWaiting());
 }
 
-// test circular queue buffer (offer and immediate poll events more than queue size times)
-// - make sure eventsWaiting is correct
-// test pulling with no events after circling queue
+void test_circular_queue()
+{
+    Quest_EventDispatcher ed = Quest_EventDispatcher(eventQueue, EVENT_QUEUE_SIZE);
+    // offer and poll more events than the queue size to force a circle back to the start of the queue
+    uint8_t eventsToOffer = EVENT_QUEUE_SIZE * 3;
+    Event next;
+    for (uint8_t i = 0; i < eventsToOffer; i++)
+    {
+        Event *randomEvent = &randomEvents[i % EVENT_QUEUE_SIZE];
+        TEST_ASSERT_TRUE(ed.offer(randomEvent));
+        TEST_ASSERT_EQUAL(1, ed.eventsWaiting());
+
+        // peek into the queue to make sure circling is happening
+        Event *peek = &eventQueue[i % EVENT_QUEUE_SIZE];
+        compareEvents(randomEvent, peek);
+
+        // polling must also circle
+        TEST_ASSERT_TRUE(ed.poll(&next));
+        TEST_ASSERT_EQUAL(0, ed.eventsWaiting());
+        compareEvents(randomEvent, &next);
+    }
+}
+
 // test default team & player ID when not set
 
 void setup()
@@ -99,6 +119,7 @@ void setup()
     RUN_TEST(test_offering_and_polling_events);
     RUN_TEST(test_offering_to_full_queue);
     RUN_TEST(test_polling_when_no_events_are_queued);
+    RUN_TEST(test_circular_queue);
 
     UNITY_END();
 }

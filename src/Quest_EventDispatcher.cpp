@@ -10,9 +10,15 @@ Quest_EventDispatcher::Quest_EventDispatcher(Event *queue, uint8_t queueSize)
 
 bool Quest_EventDispatcher::offer(Event *e)
 {
-    if (queuePosition >= queueSize)
+    if (eventsWaiting() == queueSize)
     {
         return false;
+    }
+
+    // circle to start of queue if needed
+    if (queuePosition == queueSize)
+    {
+        queuePosition = 0;
     }
 
     copyEvent(&queue[queuePosition], e);
@@ -22,14 +28,25 @@ bool Quest_EventDispatcher::offer(Event *e)
 
 uint8_t Quest_EventDispatcher::eventsWaiting()
 {
+    if (pollPosition > queuePosition)
+    {
+        return queuePosition + queueSize - pollPosition;
+    }
+
     return queuePosition - pollPosition;
 }
 
 bool Quest_EventDispatcher::poll(Event *out)
 {
-    if (pollPosition >= queuePosition)
+    if (eventsWaiting() == 0)
     {
         return false;
+    }
+
+    // circle to start of queue if needed
+    if (pollPosition == queueSize)
+    {
+        pollPosition = 0;
     }
 
     copyEvent(out, &queue[pollPosition]);
