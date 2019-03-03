@@ -1,6 +1,6 @@
-#include "Quest_EventDispatcher.h"
+#include "Quest_EventQueue.h"
 
-Quest_EventDispatcher::Quest_EventDispatcher(Event *queue, uint8_t queueSize, uint8_t defaultTeamID, uint8_t defaultPlayerID)
+Quest_EventQueue::Quest_EventQueue(Event *queue, uint8_t queueSize, uint8_t defaultTeamID, uint8_t defaultPlayerID)
 {
     this->queue = queue;
     this->queueSize = queueSize;
@@ -10,7 +10,7 @@ Quest_EventDispatcher::Quest_EventDispatcher(Event *queue, uint8_t queueSize, ui
     this->pollPosition = 0;
 }
 
-bool Quest_EventDispatcher::offer(Event *e)
+bool Quest_EventQueue::offer(Event *e)
 {
     if (eventsWaiting() == queueSize)
     {
@@ -28,7 +28,7 @@ bool Quest_EventDispatcher::offer(Event *e)
     return true;
 }
 
-bool Quest_EventDispatcher::offer(uint8_t eventID, uint8_t *data, uint8_t dataLengthInBits)
+bool Quest_EventQueue::offer(uint8_t eventID, uint8_t *data, uint8_t dataLengthInBits)
 {
     // TODO optimize to not need an Event (without hurting readability too badly)
     // TODO YUCK THIS COPIES DATA TO TEMP THEN TO BUFFER....>FIX THIS ^^^
@@ -44,12 +44,12 @@ bool Quest_EventDispatcher::offer(uint8_t eventID, uint8_t *data, uint8_t dataLe
     return this->offer(&e);
 }
 
-bool Quest_EventDispatcher::offer(uint8_t eventID)
+bool Quest_EventQueue::offer(uint8_t eventID)
 {
     return this->offer(eventID, NULL, 0);
 }
 
-uint8_t Quest_EventDispatcher::eventsWaiting()
+uint8_t Quest_EventQueue::eventsWaiting()
 {
     if (pollPosition > queuePosition)
     {
@@ -59,7 +59,7 @@ uint8_t Quest_EventDispatcher::eventsWaiting()
     return queuePosition - pollPosition;
 }
 
-bool Quest_EventDispatcher::poll(Event *out)
+bool Quest_EventQueue::poll(Event *out)
 {
     if (eventsWaiting() == 0)
     {
@@ -77,7 +77,7 @@ bool Quest_EventDispatcher::poll(Event *out)
     return true;
 }
 
-void Quest_EventDispatcher::copyData(uint8_t *dest, uint8_t *src, uint8_t bitsToCopy)
+void Quest_EventQueue::copyData(uint8_t *dest, uint8_t *src, uint8_t bitsToCopy)
 {
     uint8_t bytesToCopy = bitsToCopy / 8;
     if (bitsToCopy % 8 > 0)
@@ -87,7 +87,7 @@ void Quest_EventDispatcher::copyData(uint8_t *dest, uint8_t *src, uint8_t bitsTo
     memcpy(dest, src, bytesToCopy);
 }
 
-void Quest_EventDispatcher::copyEvent(Event *dest, Event *src)
+void Quest_EventQueue::copyEvent(Event *dest, Event *src)
 {
     dest->teamID = src->teamID;
     dest->playerID = src->playerID;

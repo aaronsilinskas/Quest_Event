@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "Quest_EventDispatcher.h"
+#include "Quest_EventQueue.h"
 
 #define EVENT_QUEUE_SIZE 10
 Event eventQueue[EVENT_QUEUE_SIZE];
@@ -31,78 +31,78 @@ void compareEvents(Event *event1, Event *event2)
 
 void test_offering_and_polling_events()
 {
-    Quest_EventDispatcher ed = Quest_EventDispatcher(eventQueue, EVENT_QUEUE_SIZE, 0, 0);
+    Quest_EventQueue eq = Quest_EventQueue(eventQueue, EVENT_QUEUE_SIZE, 0, 0);
     uint8_t eventsToOffer = random(EVENT_QUEUE_SIZE);
 
     // offer events to the dispatcher
     for (uint8_t i = 0; i < eventsToOffer; i++)
     {
-        TEST_ASSERT_TRUE(ed.offer(&randomEvents[i]));
-        TEST_ASSERT_EQUAL(i + 1, ed.eventsWaiting());
+        TEST_ASSERT_TRUE(eq.offer(&randomEvents[i]));
+        TEST_ASSERT_EQUAL(i + 1, eq.eventsWaiting());
     }
 
     // poll the events
     Event next;
     for (uint8_t i = 0; i < eventsToOffer; i++)
     {
-        TEST_ASSERT_EQUAL(eventsToOffer - i, ed.eventsWaiting());
-        TEST_ASSERT_TRUE(ed.poll(&next));
+        TEST_ASSERT_EQUAL(eventsToOffer - i, eq.eventsWaiting());
+        TEST_ASSERT_TRUE(eq.poll(&next));
         compareEvents(&randomEvents[i], &next);
     }
-    TEST_ASSERT_EQUAL(0, ed.eventsWaiting());
+    TEST_ASSERT_EQUAL(0, eq.eventsWaiting());
 }
 
 void test_offering_to_full_queue()
 {
-    Quest_EventDispatcher ed = Quest_EventDispatcher(eventQueue, EVENT_QUEUE_SIZE, 0, 0);
+    Quest_EventQueue eq = Quest_EventQueue(eventQueue, EVENT_QUEUE_SIZE, 0, 0);
     // fill the queue
     for (uint8_t i = 0; i < EVENT_QUEUE_SIZE; i++)
     {
-        TEST_ASSERT_TRUE(ed.offer(&randomEvents[i]));
+        TEST_ASSERT_TRUE(eq.offer(&randomEvents[i]));
     }
-    TEST_ASSERT_EQUAL(EVENT_QUEUE_SIZE, ed.eventsWaiting());
+    TEST_ASSERT_EQUAL(EVENT_QUEUE_SIZE, eq.eventsWaiting());
 
     // now try to offer another event
-    TEST_ASSERT_FALSE(ed.offer(&randomEvents[0]));
-    TEST_ASSERT_EQUAL(EVENT_QUEUE_SIZE, ed.eventsWaiting());
+    TEST_ASSERT_FALSE(eq.offer(&randomEvents[0]));
+    TEST_ASSERT_EQUAL(EVENT_QUEUE_SIZE, eq.eventsWaiting());
 }
 
 void test_polling_when_no_events_are_queued()
 {
-    Quest_EventDispatcher ed = Quest_EventDispatcher(eventQueue, EVENT_QUEUE_SIZE, 0, 0);
+    Quest_EventQueue eq = Quest_EventQueue(eventQueue, EVENT_QUEUE_SIZE, 0, 0);
     // offer and poll events so no events are queued
     uint8_t eventsToOffer = random(EVENT_QUEUE_SIZE);
     Event ignoredEvent;
     for (uint8_t i = 0; i < eventsToOffer; i++)
     {
-        ed.offer(&randomEvents[i]);
-        ed.poll(&ignoredEvent);
+        eq.offer(&randomEvents[i]);
+        eq.poll(&ignoredEvent);
     }
-    TEST_ASSERT_EQUAL(0, ed.eventsWaiting());
+    TEST_ASSERT_EQUAL(0, eq.eventsWaiting());
     Event next;
-    TEST_ASSERT_FALSE(ed.poll(&next));
-    TEST_ASSERT_EQUAL(0, ed.eventsWaiting());
+    TEST_ASSERT_FALSE(eq.poll(&next));
+    TEST_ASSERT_EQUAL(0, eq.eventsWaiting());
 }
 
 void test_circular_queue()
 {
-    Quest_EventDispatcher ed = Quest_EventDispatcher(eventQueue, EVENT_QUEUE_SIZE, 0, 0);
+    Quest_EventQueue eq = Quest_EventQueue(eventQueue, EVENT_QUEUE_SIZE, 0, 0);
     // offer and poll more events than the queue size to force a circle back to the start of the queue
     uint8_t eventsToOffer = EVENT_QUEUE_SIZE * 3;
     Event next;
     for (uint8_t i = 0; i < eventsToOffer; i++)
     {
         Event *randomEvent = &randomEvents[i % EVENT_QUEUE_SIZE];
-        TEST_ASSERT_TRUE(ed.offer(randomEvent));
-        TEST_ASSERT_EQUAL(1, ed.eventsWaiting());
+        TEST_ASSERT_TRUE(eq.offer(randomEvent));
+        TEST_ASSERT_EQUAL(1, eq.eventsWaiting());
 
         // peek into the queue to make sure circling is happening
         Event *peek = &eventQueue[i % EVENT_QUEUE_SIZE];
         compareEvents(randomEvent, peek);
 
         // polling must also circle
-        TEST_ASSERT_TRUE(ed.poll(&next));
-        TEST_ASSERT_EQUAL(0, ed.eventsWaiting());
+        TEST_ASSERT_TRUE(eq.poll(&next));
+        TEST_ASSERT_EQUAL(0, eq.eventsWaiting());
         compareEvents(randomEvent, &next);
     }
 }
@@ -115,12 +115,12 @@ void test_default_team_and_player_without_event_data()
     uint8_t defaultPlayerID = randomEvent.playerID;
     uint8_t eventID = randomEvent.eventID;
 
-    Quest_EventDispatcher ed = Quest_EventDispatcher(eventQueue, EVENT_QUEUE_SIZE, defaultTeamID, defaultPlayerID);
+    Quest_EventQueue eq = Quest_EventQueue(eventQueue, EVENT_QUEUE_SIZE, defaultTeamID, defaultPlayerID);
     // offer an event with no player or team ID (useful for subcomponents of larger system)
-    TEST_ASSERT_TRUE(ed.offer(eventID));
+    TEST_ASSERT_TRUE(eq.offer(eventID));
 
     Event next;
-    TEST_ASSERT_TRUE(ed.poll(&next));
+    TEST_ASSERT_TRUE(eq.poll(&next));
     TEST_ASSERT_EQUAL(defaultTeamID, next.teamID);
     TEST_ASSERT_EQUAL(defaultPlayerID, next.playerID);
     TEST_ASSERT_EQUAL(eventID, next.eventID);
@@ -137,12 +137,12 @@ void test_default_team_and_player_with_event_data()
     uint8_t *data = randomEvent.data;
     uint8_t dataLengthInBits = randomEvent.dataLengthInBits;
 
-    Quest_EventDispatcher ed = Quest_EventDispatcher(eventQueue, EVENT_QUEUE_SIZE, defaultTeamID, defaultPlayerID);
+    Quest_EventQueue eq = Quest_EventQueue(eventQueue, EVENT_QUEUE_SIZE, defaultTeamID, defaultPlayerID);
     // offer an event with no player or team ID (useful for subcomponents of larger system)
-    TEST_ASSERT_TRUE(ed.offer(eventID, data, dataLengthInBits));
+    TEST_ASSERT_TRUE(eq.offer(eventID, data, dataLengthInBits));
 
     Event next;
-    TEST_ASSERT_TRUE(ed.poll(&next));
+    TEST_ASSERT_TRUE(eq.poll(&next));
     TEST_ASSERT_EQUAL(defaultTeamID, next.teamID);
     TEST_ASSERT_EQUAL(defaultPlayerID, next.playerID);
     TEST_ASSERT_EQUAL(eventID, next.eventID);
