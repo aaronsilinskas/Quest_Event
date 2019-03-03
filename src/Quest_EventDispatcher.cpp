@@ -1,9 +1,11 @@
 #include "Quest_EventDispatcher.h"
 
-Quest_EventDispatcher::Quest_EventDispatcher(Event *queue, uint8_t queueSize)
+Quest_EventDispatcher::Quest_EventDispatcher(Event *queue, uint8_t queueSize, uint8_t defaultTeamID, uint8_t defaultPlayerID)
 {
     this->queue = queue;
     this->queueSize = queueSize;
+    this->defaultTeamID = defaultTeamID;
+    this->defaultPlayerID = defaultPlayerID;
     this->queuePosition = 0;
     this->pollPosition = 0;
 }
@@ -24,6 +26,27 @@ bool Quest_EventDispatcher::offer(Event *e)
     copyEvent(&queue[queuePosition], e);
     queuePosition++;
     return true;
+}
+
+bool Quest_EventDispatcher::offer(uint8_t eventID, uint8_t *data, uint8_t dataLengthInBits)
+{
+    // TODO optimize to not need an Event (without hurting readability too badly)
+    // TODO YUCK THIS COPIES DATA TO TEMP THEN TO BUFFER....>FIX THIS ^^^
+    Event e;
+    e.teamID = defaultTeamID;
+    e.playerID = defaultPlayerID;
+    e.eventID = eventID;
+    e.dataLengthInBits = dataLengthInBits;
+    if (dataLengthInBits > 0)
+    {
+        copyData(e.data, data, dataLengthInBits);
+    }
+    return this->offer(&e);
+}
+
+bool Quest_EventDispatcher::offer(uint8_t eventID)
+{
+    return this->offer(eventID, NULL, 0);
 }
 
 uint8_t Quest_EventDispatcher::eventsWaiting()
@@ -54,6 +77,16 @@ bool Quest_EventDispatcher::poll(Event *out)
     return true;
 }
 
+void Quest_EventDispatcher::copyData(uint8_t *dest, uint8_t *src, uint8_t bitsToCopy)
+{
+    uint8_t bytesToCopy = bitsToCopy / 8;
+    if (bitsToCopy % 8 > 0)
+    {
+        bytesToCopy++;
+    }
+    memcpy(dest, src, bytesToCopy);
+}
+
 void Quest_EventDispatcher::copyEvent(Event *dest, Event *src)
 {
     dest->teamID = src->teamID;
@@ -62,11 +95,6 @@ void Quest_EventDispatcher::copyEvent(Event *dest, Event *src)
     dest->dataLengthInBits = src->dataLengthInBits;
     if (src->dataLengthInBits > 0)
     {
-        uint8_t bytesToCopy = src->dataLengthInBits / 8;
-        if (src->dataLengthInBits % 8 > 0)
-        {
-            bytesToCopy++;
-        }
-        memcpy(dest->data, src->data, bytesToCopy);
+        copyData(dest->data, src->data, src->dataLengthInBits);
     }
 }
