@@ -30,18 +30,29 @@ bool Quest_EventQueue::offer(Event *e)
 
 bool Quest_EventQueue::offer(uint8_t eventID, uint8_t *data, uint8_t dataLengthInBits)
 {
-    // TODO optimize to not need an Event (without hurting readability too badly)
-    // TODO YUCK THIS COPIES DATA TO TEMP THEN TO BUFFER....>FIX THIS ^^^
-    Event e;
-    e.teamID = defaultTeamID;
-    e.playerID = defaultPlayerID;
-    e.eventID = eventID;
-    e.dataLengthInBits = dataLengthInBits;
+    if (eventsWaiting() == queueSize)
+    {
+        return false;
+    }
+
+    // circle to start of queue if needed
+    if (queuePosition == queueSize)
+    {
+        queuePosition = 0;
+    }
+
+    Event *e = &queue[queuePosition];
+    e->teamID = defaultTeamID;
+    e->playerID = defaultPlayerID;
+    e->eventID = eventID;
+    e->dataLengthInBits = dataLengthInBits;
     if (dataLengthInBits > 0)
     {
-        copyData(e.data, data, dataLengthInBits);
+        copyData(e->data, data, dataLengthInBits);
     }
-    return this->offer(&e);
+
+    queuePosition++;
+    return true;
 }
 
 bool Quest_EventQueue::offer(uint8_t eventID)
