@@ -42,7 +42,7 @@ void loop()
 
         Serial.print("Event sent: Count=");
         Serial.println(count);
-        printBinaryArray(irTransmitter.encodedBits, eventEncoder.encodedBitCount, " ");
+        printBinaryArray(irTransmitter.encodedBits, eventEncoder.encodedBitCount / 8 + 1, " ");
     }
     else
     {
