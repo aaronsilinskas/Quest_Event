@@ -25,7 +25,7 @@ void setup()
 
     event.teamID = TEAM_ID;
     event.playerID = PLAYER_ID;
-    event.eventID = EID_PING;
+    event.eventID = QE_ID_PING;
 }
 
 void loop()
@@ -35,18 +35,19 @@ void loop()
     event.data[0] = count;
     event.dataLengthInBits = 8;
 
-    if (eventEncoder.encodeToBuffer(&event))
+    EventEncodeResult result = eventEncoder.encodeToBuffer(&event);
+    if (result == EventEncoded)
     {
         irTransmitter.sendBits(eventEncoder.encodedBitCount);
 
         Serial.print("Event sent: Count=");
         Serial.println(count);
-        printBinaryArray(irTransmitter.encodedBits, eventEncoder.encodedBitCount);
+        printBinaryArray(irTransmitter.encodedBits, eventEncoder.encodedBitCount, " ");
     }
     else
     {
         Serial.print("Error encoding event: ");
-        Serial.println(eventEncoder.encodeState);
+        Serial.println(result);
     }
 
     count++; // will overflow to 0
@@ -54,5 +55,5 @@ void loop()
     digitalWrite(LED_BUILTIN, HIGH);
     delay(500);
     digitalWrite(LED_BUILTIN, LOW);
-    delay(1500);
+    delay(500);
 }
